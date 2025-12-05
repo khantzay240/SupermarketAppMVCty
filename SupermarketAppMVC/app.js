@@ -128,42 +128,71 @@ const clearCart = (req, callback) => {
     }
 };
 
-// Persist order and items in a single transaction
+// Persist order and items in a single transaction, adjusting stock
 const saveOrder = (userId, orderNumber, cartItems, total, callback) => {
     connection.beginTransaction((err) => {
         if (err) return callback(err);
 
-        const orderSql = 'INSERT INTO orders (order_number, user_id, total) VALUES (?, ?, ?)';
-        connection.query(orderSql, [orderNumber, userId, total], (orderErr, orderResult) => {
-            if (orderErr) {
-                return connection.rollback(() => callback(orderErr));
-            }
+        // Step 1: verify and reduce stock for each item (only when product id exists)
+        const adjustStock = (index) => {
+            if (index >= cartItems.length) return insertOrder();
+            const item = cartItems[index];
+            if (!item.id) return adjustStock(index + 1); // skip items without product id
 
-            const orderId = orderResult.insertId;
-            const itemValues = cartItems.map(it => [
-                orderId,
-                it.id || null,
-                it.productName,
-                it.price,
-                it.quantity
-            ]);
-
-            const itemsSql = `
-              INSERT INTO order_items (order_id, product_id, product_name, price, quantity)
-              VALUES ?
-            `;
-            connection.query(itemsSql, [itemValues], (itemsErr) => {
-                if (itemsErr) {
-                    return connection.rollback(() => callback(itemsErr));
+            const lockSql = 'SELECT quantity FROM products WHERE id = ? FOR UPDATE';
+            connection.query(lockSql, [item.id], (lockErr, rows) => {
+                if (lockErr) return connection.rollback(() => callback(lockErr));
+                if (!rows || rows.length === 0) {
+                    return connection.rollback(() => callback(Object.assign(new Error('Product not found'), { code: 'PRODUCT_NOT_FOUND' })));
                 }
-                connection.commit((commitErr) => {
-                    if (commitErr) {
-                        return connection.rollback(() => callback(commitErr));
-                    }
-                    callback(null, { orderId, orderNumber });
+                const available = rows[0].quantity;
+                if (available < item.quantity) {
+                    const errObj = Object.assign(new Error(`Insufficient stock for ${item.productName}`), { code: 'INSUFFICIENT_STOCK' });
+                    return connection.rollback(() => callback(errObj));
+                }
+                const updateSql = 'UPDATE products SET quantity = quantity - ? WHERE id = ?';
+                connection.query(updateSql, [item.quantity, item.id], (updateErr) => {
+                    if (updateErr) return connection.rollback(() => callback(updateErr));
+                    adjustStock(index + 1);
                 });
             });
-        });
+        };
+
+        const insertOrder = () => {
+            const orderSql = 'INSERT INTO orders (order_number, user_id, total) VALUES (?, ?, ?)';
+            connection.query(orderSql, [orderNumber, userId, total], (orderErr, orderResult) => {
+                if (orderErr) {
+                    return connection.rollback(() => callback(orderErr));
+                }
+
+                const orderId = orderResult.insertId;
+                const itemValues = cartItems.map(it => [
+                    orderId,
+                    it.id || null,
+                    it.productName,
+                    it.price,
+                    it.quantity
+                ]);
+
+                const itemsSql = `
+                  INSERT INTO order_items (order_id, product_id, product_name, price, quantity)
+                  VALUES ?
+                `;
+                connection.query(itemsSql, [itemValues], (itemsErr) => {
+                    if (itemsErr) {
+                        return connection.rollback(() => callback(itemsErr));
+                    }
+                    connection.commit((commitErr) => {
+                        if (commitErr) {
+                            return connection.rollback(() => callback(commitErr));
+                        }
+                        callback(null, { orderId, orderNumber });
+                    });
+                });
+            });
+        };
+
+        adjustStock(0);
     });
 };
 
@@ -442,6 +471,10 @@ app.post('/checkout/confirm', checkAuthenticated, checkUser, (req, res) => {
         saveOrder(user.id, orderNumber, cartItems, total, (saveErr, savedOrder) => {
             if (saveErr) {
                 console.error('Order save failed:', saveErr);
+                if (saveErr.code === 'INSUFFICIENT_STOCK') {
+                    req.flash('error', 'Insufficient stock for one or more items. Please update your cart.');
+                    return res.redirect('/cart');
+                }
                 return res.status(500).send('Unable to place order');
             }
 
