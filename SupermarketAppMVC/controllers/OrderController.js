@@ -1,6 +1,8 @@
 const nodemailer = require('nodemailer');
 const Cart = require('../models/Cart');
 const Order = require('../models/Order');
+const Transaction = require('../models/Transaction');
+const paypal = require('../services/paypal');
 
 const smtpTransporter = process.env.SMTP_HOST
     ? nodemailer.createTransport({
@@ -33,6 +35,10 @@ const clearCart = (req, callback) => {
     }
 };
 
+const clearCartAsync = (req) => new Promise((resolve, reject) => {
+    clearCart(req, (err) => (err ? reject(err) : resolve()));
+});
+
 const sendReceiptEmail = async (user, cartItems, total, orderNumber) => {
     const lines = cartItems.map(it => {
         const price = parseFloat(it.price);
@@ -63,13 +69,30 @@ Total: $${total.toFixed(2)}
     await smtpTransporter.sendMail(mailOptions);
 };
 
+const fetchCartItemsAsync = (req) => new Promise((resolve, reject) => {
+    fetchCartItems(req, (err, cartItems) => (err ? reject(err) : resolve(cartItems || [])));
+});
+
+const createOrderRecord = (userId, orderNumber, cartItems, total) => new Promise((resolve, reject) => {
+    Order.createOrder(userId, orderNumber, cartItems, total, (err, savedOrder) => {
+        if (err) return reject(err);
+        resolve(savedOrder);
+    });
+});
+
+const calculateTotal = (items) => items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
 const OrderController = {
     showCheckout(req, res) {
         const user = req.session.user;
         fetchCartItems(req, (err, cartItems) => {
             if (err) return res.status(500).send('DB error');
-            const total = (cartItems || []).reduce((sum, item) => sum + item.price * item.quantity, 0);
-            res.render('checkout', { user, cart: cartItems || [], total });
+            const total = calculateTotal(cartItems || []);
+            res.render('checkout', {
+                user,
+                cart: cartItems || [],
+                total
+            });
         });
     },
 
@@ -142,6 +165,124 @@ const OrderController = {
             if (err) return res.status(500).send('DB error');
             res.render('orders', { orders: orders || [], itemsByOrder: itemsByOrder || {}, user: req.session.user });
         });
+    },
+
+    showPaymentMethod(req, res) {
+        const user = req.session.user;
+        fetchCartItems(req, (err, cartItems) => {
+            if (err) return res.status(500).send('DB error');
+            if (!cartItems || cartItems.length === 0) {
+                req.flash('error', 'Your cart is empty.');
+                return res.redirect('/cart');
+            }
+            const total = calculateTotal(cartItems || []);
+            res.render('payment-method', {
+                user,
+                cart: cartItems || [],
+                total,
+                paypalClientId: process.env.PAYPAL_CLIENT_ID
+            });
+        });
+    },
+
+    // PayPal: create an order based on the authenticated user's cart
+    async createPaypalOrder(req, res) {
+        try {
+            const cartItems = await fetchCartItemsAsync(req);
+            if (!cartItems || cartItems.length === 0) {
+                return res.status(400).json({ error: 'Your cart is empty.' });
+            }
+            const total = calculateTotal(cartItems);
+            const order = await paypal.createOrder(total.toFixed(2));
+            if (order && order.id) {
+                return res.json({ id: order.id });
+            }
+            return res.status(500).json({ error: 'Failed to create PayPal order', details: order });
+        } catch (err) {
+            console.error('PayPal create-order failed:', err);
+            return res.status(500).json({ error: 'Failed to create PayPal order', message: err.message });
+        }
+    },
+
+    // PayPal: capture an order, create the local order, and clear the cart
+    async capturePaypalOrder(req, res) {
+        const user = req.session.user;
+        if (!user || !user.id) {
+            return res.status(401).json({ error: 'Authentication required' });
+        }
+        const { orderID } = req.body;
+        if (!orderID) {
+            return res.status(400).json({ error: 'Missing orderID' });
+        }
+
+        try {
+            const capture = await paypal.captureOrder(orderID);
+            if (!capture || capture.status !== 'COMPLETED') {
+                return res.status(400).json({ error: 'Payment not completed', details: capture });
+            }
+
+            const cartItems = await fetchCartItemsAsync(req);
+            if (!cartItems || cartItems.length === 0) {
+                return res.status(400).json({ error: 'Your cart is empty.' });
+            }
+
+            const total = calculateTotal(cartItems);
+            const captureDetails = capture.purchase_units?.[0]?.payments?.captures?.[0];
+            const capturedAmount = parseFloat(captureDetails?.amount?.value || '0');
+            const currency = captureDetails?.amount?.currency_code || 'SGD';
+            if (!Number.isFinite(capturedAmount) || Math.abs(capturedAmount - total) > 0.01) {
+                return res.status(400).json({ error: 'Captured amount does not match cart total.' });
+            }
+
+            const orderNumber = `ORD-${Date.now()}`;
+            let savedOrder;
+            try {
+                savedOrder = await createOrderRecord(user.id, orderNumber, cartItems, total);
+            } catch (saveErr) {
+                console.error('Order save failed:', saveErr);
+                if (saveErr.code === 'INSUFFICIENT_STOCK') {
+                    return res.status(400).json({ error: 'Insufficient stock for one or more items. Please update your cart.' });
+                }
+                return res.status(500).json({ error: 'Unable to place order' });
+            }
+
+            const transaction = {
+                orderId: capture.id,
+                payerId: capture.payer?.payer_id,
+                payerEmail: capture.payer?.email_address,
+                amount: capturedAmount,
+                currency,
+                status: capture.status,
+                time: (captureDetails?.create_time || '').replace('T', ' ').replace('Z', '')
+            };
+            Transaction.create(transaction).catch((txErr) => {
+                console.error('Transaction save failed:', txErr);
+            });
+
+            sendReceiptEmail(user, cartItems, total, orderNumber).catch((emailErr) => {
+                console.error('Email send failed:', emailErr);
+            });
+
+            await clearCartAsync(req);
+            req.session.lastOrder = {
+                orderId: savedOrder.orderId,
+                orderNumber,
+                cart: cartItems,
+                total,
+                userSnapshot: {
+                    username: user.username,
+                    email: user.email,
+                    address: user.address,
+                    contact: user.contact
+                },
+                placedAt: new Date().toISOString()
+            };
+
+            return res.json({ redirectUrl: '/checkout/success' });
+        } catch (err) {
+            console.error('PayPal capture-order failed:', err);
+            return res.status(500).json({ error: 'Failed to capture PayPal order', message: err.message });
+        }
     }
 };
 

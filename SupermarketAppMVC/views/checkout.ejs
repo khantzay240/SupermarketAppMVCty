@@ -95,9 +95,7 @@
               </div>
               <div class="d-flex gap-2 mt-4">
                 <a href="/cart" class="btn btn-outline-secondary">Back to Cart</a>
-                <form action="/checkout/confirm" method="POST" class="m-0">
-                  <button type="submit" class="btn btn-success">Confirm Checkout</button>
-                </form>
+                <a href="/checkout/payment" class="btn btn-success">Choose Payment Method</a>
               </div>
             <% } else { %>
               <p>Your cart is empty. <a href="/shopping">Continue shopping</a>.</p>

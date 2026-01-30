@@ -23,6 +23,7 @@ const upload = multer({ storage });
 
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
+app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 app.use(session({
@@ -80,7 +81,12 @@ app.post('/remove-from-cart/:id', checkAuthenticated, CartController.removeItem)
 app.get('/checkout', checkAuthenticated, checkUser, OrderController.showCheckout);
 app.post('/checkout/confirm', checkAuthenticated, checkUser, OrderController.confirmCheckout);
 app.get('/checkout/success', checkAuthenticated, checkUser, OrderController.checkoutSuccess);
+app.get('/checkout/payment', checkAuthenticated, checkUser, OrderController.showPaymentMethod);
 app.get('/orders', checkAuthenticated, checkUser, OrderController.listOrders);
+
+// PayPal integration
+app.post('/api/paypal/create-order', checkAuthenticated, checkUser, OrderController.createPaypalOrder);
+app.post('/api/paypal/capture-order', checkAuthenticated, checkUser, OrderController.capturePaypalOrder);
 
 app.listen(3000, () => {
     console.log('Server is running on http://localhost:3000');

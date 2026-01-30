@@ -35,6 +35,9 @@
               <a class="nav-link" href="/categories/manage">Manage Categories</a>
             </li>
             <li class="nav-item">
+              <a class="nav-link" href="/reviews/admin">View Reviews</a>
+            </li>
+            <li class="nav-item">
               <a class="nav-link" href="/categories">Categories</a>
             </li>
             <li class="nav-item">
@@ -49,6 +52,22 @@
     <p>Welcome, <%= user.username %> (<%= user.role %>)</p>
     <br>
     <div class="text-center mb-4"><h2>Products from Supermarket App Database</h2></div>
+    <form class="row g-2 mb-4" method="GET" action="/inventory">
+      <div class="col-sm-9 col-md-6 col-lg-5">
+        <input type="text" class="form-control" name="search" placeholder="Search products by name" value="<%= search || '' %>">
+      </div>
+      <div class="col-sm-3 col-md-2">
+        <button class="btn btn-primary w-100" type="submit">Search</button>
+      </div>
+      <% if (search) { %>
+        <div class="col-12 col-md-auto d-flex align-items-center">
+          <a class="link-secondary small" href="/inventory">Clear search</a>
+        </div>
+      <% } %>
+    </form>
+    <% if (products.length === 0) { %>
+      <p class="text-muted">No products match "<%= search %>".</p>
+    <% } %>
     <div class="row row-cols-2 row-cols-sm-3 row-cols-lg-5 g-3">
       <% products.forEach(p => { %>
         <div class="col">

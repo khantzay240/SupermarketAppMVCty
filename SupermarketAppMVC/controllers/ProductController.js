@@ -2,12 +2,17 @@ const Product = require('../models/Product');
 
 const ProductController = {
     listInventory(req, res) {
+        const search = (req.query.search || '').trim().toLowerCase();
         Product.getAll((err, products) => {
             if (err) {
                 console.error('Error fetching products:', err);
                 return res.status(500).send('Database error');
             }
-            return res.render('inventory', { products, user: req.session.user });
+            let filtered = products;
+            if (search) {
+                filtered = products.filter(p => (p.productName || '').toLowerCase().includes(search));
+            }
+            return res.render('inventory', { products: filtered, user: req.session.user, search });
         });
     },
 
