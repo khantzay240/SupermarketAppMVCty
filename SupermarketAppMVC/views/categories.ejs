@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Categories</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="text-center py-3" style="background: linear-gradient(90deg, #0f172a, #111827); color: #fff;">
+    <div class="d-inline-flex align-items-center gap-3">
+      <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#22d3ee,#2563eb);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;">KZN</div>
+      <div class="text-start">
+        <div style="letter-spacing:2px;font-weight:800;text-transform:uppercase;">KZN supermarket</div>
+        <div class="small" style="color:#a5b4fc;">Fresh &middot; Fast &middot; Friendly</div>
+      </div>
+    </div>
+  </div>
+  <nav class="navbar navbar-expand-sm navbar-dark" style="background: linear-gradient(90deg, #0f172a, #111827);">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/">Supermarket App</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#collapsibleNavbar">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="collapsibleNavbar">
+        <ul class="navbar-nav">
+          <% if (user && user.role === 'admin') { %>
+            <li class="nav-item"><a class="nav-link" href="/inventory">Inventory</a></li>
+            <li class="nav-item"><a class="nav-link" href="/users">View Users</a></li>
+            <li class="nav-item"><a class="nav-link" href="/categories/manage">Manage Categories</a></li>
+          <% } else { %>
+            <li class="nav-item"><a class="nav-link" href="/shopping">Shop</a></li>
+            <li class="nav-item"><a class="nav-link" href="/cart">View Cart</a></li>
+            <li class="nav-item"><a class="nav-link" href="/orders">Orders</a></li>
+          <% } %>
+          <li class="nav-item"><a class="nav-link active" href="/categories">Categories</a></li>
+          <li class="nav-item"><a class="nav-link" href="/logout">Logout</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container my-4">
+    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-md-between gap-3 mb-3">
+      <div>
+        <h3 class="mb-1">Browse by Category</h3>
+        <div class="text-muted">Welcome, <%= user.username %> (<%= user.role %>)</div>
+      </div>
+      <form class="d-flex" method="GET" action="/categories">
+        <input type="text" name="search" class="form-control me-2" placeholder="Search product name..." value="<%= search || '' %>" required>
+        <button class="btn btn-primary" type="submit">Search</button>
+      </form>
+    </div>
+
+    <% if (message) { %>
+      <div class="alert alert-warning"><%= message %></div>
+    <% } %>
+
+    <% if (!categories || categories.length === 0) { %>
+      <p class="text-muted">No categories available.</p>
+    <% } else { %>
+      <% const catImages = {
+          'Fruits': '/images/Fruits.jpg',
+          'Vegetables': '/images/Vegetables.jpg',
+          'Drinks': '/images/Drinks.jpg',
+          'Meat': '/images/Meat.jpg',
+          'Bakery': '/images/Breads.jpg'
+        }; %>
+      <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
+        <% const preferred = ['Vegetables','Fruits','Drinks','Meat','Bakery']; %>
+        <% const ordered = [...new Set(preferred.filter(c => categories.includes(c)).concat(categories.filter(c => !preferred.includes(c))))]; %>
+        <% ordered.forEach(cat => { %>
+          <div class="col">
+            <div class="card shadow-sm h-100 border-0 overflow-hidden">
+              <% const imgSrc = catImages[cat] || '/images/Drinks.jpg'; %>
+              <div style="height:160px;background-size:cover;background-position:center;background-image:url('<%= imgSrc %>');"></div>
+              <div class="card-body d-flex flex-column">
+                <div class="h5 mb-2"><%= cat %></div>
+                <div class="text-muted small mb-3"><%= (productsByCategory[cat] || []).length %> items</div>
+                <div class="mt-auto">
+                  <a href="/categories/<%= encodeURIComponent(cat) %>" class="btn btn-outline-primary w-100">View all</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+
+
+
+

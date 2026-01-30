@@ -7,7 +7,16 @@
   <title>Manage User</title>
 </head>
 <body>
-  <nav class="navbar navbar-expand-sm bg-dark navbar-dark">
+    <div class="text-center py-3" style="background: linear-gradient(90deg, #0f172a, #111827); color: #fff;">
+    <div class="d-inline-flex align-items-center gap-3">
+      <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#22d3ee,#2563eb);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;">KZN</div>
+      <div class="text-start">
+        <div style="letter-spacing:2px;font-weight:800;text-transform:uppercase;">KZN supermarket</div>
+        <div class="small" style="color:#a5b4fc;">Fresh &middot; Fast &middot; Friendly</div>
+      </div>
+    </div>
+  </div>
+  <nav class="navbar navbar-expand-sm navbar-dark" style="background: linear-gradient(90deg, #0f172a, #111827);">
     <div class="container-fluid">
       <a class="navbar-brand" href="/">Supermarket App</a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#collapsibleNavbar">
@@ -22,6 +31,9 @@
             <a class="nav-link" href="/users">View Users</a>
           </li>
           <li class="nav-item">
+            <a class="nav-link" href="/categories">Categories</a>
+          </li>
+          <li class="nav-item">
             <a class="nav-link" href="/logout">Logout</a>
           </li>
         </ul>
@@ -30,7 +42,10 @@
   </nav>
 
   <div class="container my-4">
-    <h3 class="mb-3">Manage User</h3>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h3 class="mb-0">Manage User</h3>
+      <a href="/users" class="btn btn-outline-secondary btn-sm">Back to Users</a>
+    </div>
     <% if (errors && errors.length) { %>
       <div class="alert alert-danger">
         <% errors.forEach(e => { %><div><%= e %></div><% }) %>
@@ -77,6 +92,55 @@
     <form action="/users/<%= targetUser.id %>/delete" method="POST" onsubmit="return confirm('Delete this user?');">
       <button class="btn btn-danger" type="submit">Delete User</button>
     </form>
+
+    <hr class="my-4">
+    <div class="d-flex align-items-center mb-3">
+      <h4 class="mb-0">Orders</h4>
+      <span class="badge bg-secondary ms-2"><%= orders ? orders.length : 0 %></span>
+    </div>
+    <% if (!orders || orders.length === 0) { %>
+      <p class="text-muted">No orders found for this user.</p>
+    <% } else { %>
+      <div class="row g-3">
+        <% orders.forEach(o => { %>
+          <div class="col-12">
+            <div class="card shadow-sm border-0">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                  <div class="fw-semibold">Order <%= o.order_number || ('#' + o.id) %></div>
+                  <small class="text-muted">Placed: <%= o.placed_at %></small>
+                </div>
+                <div class="text-end">
+                  <div class="text-muted small">Total</div>
+                  <div class="fs-5 fw-semibold">$<%= Number(o.total).toFixed(2) %></div>
+                </div>
+              </div>
+              <div class="card-body">
+                <% if (itemsByOrder && itemsByOrder[o.id] && itemsByOrder[o.id].length) { %>
+                  <div class="list-group list-group-flush">
+                    <% itemsByOrder[o.id].forEach(it => { %>
+                      <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                          <div class="fw-semibold"><%= it.product_name %></div>
+                          <small class="text-muted">Qty: <%= it.quantity %> · $<%= Number(it.price).toFixed(2) %> each</small>
+                        </div>
+                        <div class="fw-semibold">$<%= (Number(it.price) * Number(it.quantity)).toFixed(2) %></div>
+                      </div>
+                    <% }); %>
+                  </div>
+                <% } else { %>
+                  <p class="text-muted mb-0">No items recorded for this order.</p>
+                <% } %>
+              </div>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
   </div>
 </body>
 </html>
+
+
+
+

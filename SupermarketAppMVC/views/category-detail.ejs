@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= category %> Products</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="text-center py-3" style="background: linear-gradient(90deg, #0f172a, #111827); color: #fff;">
+    <div class="d-inline-flex align-items-center gap-3">
+      <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#22d3ee,#2563eb);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;">KZN</div>
+      <div class="text-start">
+        <div style="letter-spacing:2px;font-weight:800;text-transform:uppercase;">KZN supermarket</div>
+        <div class="small" style="color:#a5b4fc;">Fresh &middot; Fast &middot; Friendly</div>
+      </div>
+    </div>
+  </div>
+  <nav class="navbar navbar-expand-sm navbar-dark" style="background: linear-gradient(90deg, #0f172a, #111827);">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/">Supermarket App</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#collapsibleNavbar">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="collapsibleNavbar">
+        <ul class="navbar-nav">
+          <% if (user && user.role === 'admin') { %>
+            <li class="nav-item"><a class="nav-link" href="/inventory">Inventory</a></li>
+            <li class="nav-item"><a class="nav-link" href="/users">View Users</a></li>
+            <li class="nav-item"><a class="nav-link" href="/categories/manage">Manage Categories</a></li>
+          <% } else { %>
+            <li class="nav-item"><a class="nav-link" href="/shopping">Shop</a></li>
+            <li class="nav-item"><a class="nav-link" href="/cart">View Cart</a></li>
+            <li class="nav-item"><a class="nav-link" href="/orders">Orders</a></li>
+          <% } %>
+          <li class="nav-item"><a class="nav-link active" href="/categories">Categories</a></li>
+          <li class="nav-item"><a class="nav-link" href="/logout">Logout</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container my-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div>
+        <h3 class="mb-1"><%= category %></h3>
+        <div class="text-muted"><%= products.length %> items</div>
+      </div>
+      <a class="btn btn-outline-secondary btn-sm" href="/categories">Back to Categories</a>
+    </div>
+
+    <% if (products.length === 0) { %>
+      <p class="text-muted">No products in this category.</p>
+    <% } else { %>
+      <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-5 g-3">
+        <% products.forEach(p => { %>
+          <div class="col">
+            <div class="card h-100 shadow-sm border-0">
+              <% if (p.image) { %>
+                <img src="/images/<%= p.image %>" class="card-img-top" style="object-fit: cover; max-height: 180px;" alt="<%= p.productName %>">
+              <% } %>
+              <div class="card-body d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <a href="/product/<%= p.id %>" class="h6 text-decoration-none mb-0"><%= p.productName %></a>
+                  <span class="badge bg-light text-dark">Stock: <%= p.quantity %></span>
+                </div>
+                <div class="fw-semibold fs-5 mb-3">$<%= Number(p.price).toFixed(2) %></div>
+                <div class="mt-auto">
+                  <a href="/product/<%= p.id %>" class="btn btn-outline-primary w-100 btn-sm">Details</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+
+
+
+

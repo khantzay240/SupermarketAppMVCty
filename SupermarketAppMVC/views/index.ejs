@@ -5,10 +5,76 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <title>Supermarket App</title>
+  <title>KZN Supermarket</title>
+  <style>
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      overflow: hidden;
+      color: #fff;
+      background: #0f172a;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, rgba(17,24,39,0.75), rgba(15,23,42,0.35));
+      z-index: 1;
+    }
+    .hero-slide {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      opacity: 0;
+      animation: slideShow 20s infinite;
+    }
+    .hero-slide:nth-child(1) { animation-delay: 0s; }
+    .hero-slide:nth-child(2) { animation-delay: 5s; }
+    .hero-slide:nth-child(3) { animation-delay: 10s; }
+    .hero-slide:nth-child(4) { animation-delay: 15s; }
+
+    @keyframes slideShow {
+      0% { opacity: 0; }
+      5% { opacity: 1; }
+      25% { opacity: 1; }
+      30% { opacity: 0; }
+      100% { opacity: 0; }
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      padding-top: 120px;
+      padding-bottom: 120px;
+    }
+    .badge-logo {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      background: linear-gradient(135deg,#22d3ee,#2563eb);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 18px;
+    }
+    .cta-btn {
+      min-width: 140px;
+    }
+  </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-sm bg-dark navbar-dark">
+  <div class="text-center py-3" style="background: linear-gradient(90deg, #0f172a, #111827); color: #fff;">
+    <div class="d-inline-flex align-items-center gap-3">
+      <div class="badge-logo">KZN</div>
+      <div class="text-start">
+        <div style="letter-spacing:2px;font-weight:800;text-transform:uppercase;">KZN supermarket</div>
+        <div class="small" style="color:#a5b4fc;">Fresh &middot; Fast &middot; Friendly</div>
+      </div>
+    </div>
+  </div>
+  <nav class="navbar navbar-expand-sm navbar-dark" style="background: linear-gradient(90deg, #0f172a, #111827);">
       <div class="container-fluid">
         <a class="navbar-brand" href="/">Supermarket App</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#collapsibleNavbar">
@@ -33,23 +99,26 @@
       </div>
     </nav>
 
-    <div class="container">
-        <p style="text-align: center;">
-            <% if (user) {%>
-              <% if (user.role === "admin") { %>
-                <br>
-                Back to <a href="/inventory">inventory!</a>
-              <% } else { %>
-                <br>
-                Continue <a href="/shopping">Shopping!</a>
-                <% } %>
-            <% } else { %>
-            <br>
-            Welcome to supermarket app! <br>
-            Please <a href = "/login" >login</a> to continue...
-            <% } %>
-        </p>
-        
-    </div>
+    <section class="hero">
+      <div class="hero-slide" style="background-image: url('/Supermarket images/super.jpg');"></div>
+      <div class="hero-slide" style="background-image: url('/Supermarket images/superm.jpg');"></div>
+      <div class="hero-slide" style="background-image: url('/Supermarket images/superma.jpg');"></div>
+      <div class="hero-slide" style="background-image: url('/Supermarket images/supermark.jpg');"></div>
+
+      <div class="hero-content container text-center">
+        <div class="mb-3 d-inline-flex align-items-center gap-3 px-3 py-2 rounded-4" style="background: rgba(255,255,255,0.08);">
+          <div class="badge-logo">KZN</div>
+          <div class="text-start">
+            <div class="fw-semibold text-uppercase small" style="letter-spacing: 1px;">Welcome to KZN Supermarket</div>
+          </div>
+        </div>
+        <h1 class="display-5 fw-bold">Shop fresh, fast, and friendly.</h1>
+        <p class="lead mb-4" style="color: #e5e7eb;">Your one-stop shop for groceries, ready in a click.</p>
+        <div class="d-flex justify-content-center gap-3 flex-wrap">
+          <a class="btn btn-primary btn-lg cta-btn" href="/login">Login</a>
+          <a class="btn btn-outline-light btn-lg cta-btn" href="/register">Register</a>
+        </div>
+      </div>
+    </section>
 </body>
 </html>

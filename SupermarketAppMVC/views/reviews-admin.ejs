@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>View Reviews</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+  <div class="text-center py-3" style="background: linear-gradient(90deg, #0f172a, #111827); color: #fff;">
+    <div class="d-inline-flex align-items-center gap-3">
+      <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#22d3ee,#2563eb);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;">KZN</div>
+      <div class="text-start">
+        <div style="letter-spacing:2px;font-weight:800;text-transform:uppercase;">KZN supermarket</div>
+        <div class="small" style="color:#a5b4fc;">Fresh &middot; Fast &middot; Friendly</div>
+      </div>
+    </div>
+  </div>
+  <nav class="navbar navbar-expand-sm navbar-dark" style="background: linear-gradient(90deg, #0f172a, #111827);">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/">Supermarket App</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#collapsibleNavbar">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="collapsibleNavbar">
+        <ul class="navbar-nav">
+          <li class="nav-item"><a class="nav-link" href="/inventory">Inventory</a></li>
+          <li class="nav-item"><a class="nav-link" href="/users">View Users</a></li>
+          <li class="nav-item"><a class="nav-link" href="/categories/manage">Manage Categories</a></li>
+          <li class="nav-item"><a class="nav-link active" href="/reviews/admin">View Reviews</a></li>
+          <li class="nav-item"><a class="nav-link" href="/logout">Logout</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container my-4">
+    <h3 class="mb-3">User Reviews</h3>
+    <% if (errors && errors.length) { %>
+      <div class="alert alert-danger"><%= errors.join('<br>') %></div>
+    <% } %>
+    <% if (messages && messages.length) { %>
+      <div class="alert alert-success"><%= messages.join('<br>') %></div>
+    <% } %>
+
+    <% if (!reviews || reviews.length === 0) { %>
+      <p class="text-muted">No reviews submitted yet.</p>
+    <% } else { %>
+      <div class="list-group">
+        <% reviews.forEach(r => { %>
+          <div class="list-group-item">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <strong><%= r.username || 'Anonymous' %></strong>
+              <small class="text-muted"><%= r.created_at ? r.created_at.toISOString().slice(0,19).replace('T',' ') : '' %></small>
+            </div>
+            <div><%= r.content %></div>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
